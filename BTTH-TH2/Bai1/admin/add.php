@@ -1,20 +1,37 @@
 <?php
-include 'config.php';
+session_start();
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header("location: login.php");
+    exit;
+}
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Kết nối đến cơ sở dữ liệu
+$servername = "localhost"; // Địa chỉ máy chủ
+$username = "root"; // Tên người dùng
+$password = ""; // Mật khẩu
+$dbname = "flower_db"; // Tên cơ sở dữ liệu
+
+// Tạo kết nối
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Kiểm tra kết nối
+if ($conn->connect_error) {
+    die("Kết nối thất bại: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'];
     $description = $_POST['description'];
+    $image = $_POST['image'];
 
-    // Xử lý upload ảnh
-    $image = $_FILES['image']['name'];
-    $target = "images/" . basename($image);
-    move_uploaded_file($_FILES['image']['tmp_name'], $target);
-
-    // Thêm vào cơ sở dữ liệu
+    // Thêm hoa mới vào cơ sở dữ liệu
     $stmt = $conn->prepare("INSERT INTO flowers (name, description, image) VALUES (?, ?, ?)");
-    $stmt->execute([$name, $description, $image]);
-
-    header('Location: index.php?admin');
+    $stmt->bind_param("sss", $name, $description, $image);
+    $stmt->execute();
+    
+    // Chuyển hướng về trang admin
+    header("location: admin.php");
+    exit;
 }
 ?>
 
@@ -22,27 +39,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thêm hoa mới</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="text-center">
-        <h1>Thêm hoa mới</h1>
+    <div class="container mt-4">
+        <h2 class="text-center">Thêm hoa mới</h2>
+        <form method="post" action="">
+            <div class="mb-3">
+                <label for="name" class="form-label">Tên hoa</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Mô tả</label>
+                <textarea class="form-control" id="description" name="description" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Link hình ảnh</label>
+                <input type="text" class="form-control" id="image" name="image" required>
+            </div>
+            <button type="submit" class="btn btn-success">Thêm hoa</button>
+        </form>
     </div>
-    <main class="container mt-4 text-center">
-    <form action="" method="POST" enctype="multipart/form-data">
-        <label for="name">Tên hoa:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
-
-        <label for="description">Mô tả:</label><br>
-        <textarea id="description" name="description" required rows="10" cols="50"></textarea><br><br>
-
-        <label for="image">Ảnh:</label><br>
-        <input type="file" id="image" name="image" required><br><br>
-
-        <button type="submit">Thêm</button>
-    </form>
-    </main>
+    <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php
+$conn->close(); // Đóng kết nối
+?>

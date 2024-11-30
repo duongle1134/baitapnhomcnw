@@ -1,42 +1,48 @@
 <?php
 session_start();
-if ($_SESSION['role'] !== 'admin') {
-    header('Location: index.php');
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header("location: login.php");
     exit;
 }
 
-include 'data.php';
+// Kết nối đến cơ sở dữ liệu
+$servername = "localhost"; // Địa chỉ máy chủ
+$username = "root"; // Tên người dùng
+$password = ""; // Mật khẩu
+$dbname = "flower_db"; // Tên cơ sở dữ liệu
 
-// Lấy ID của loại hoa cần sửa từ URL
-$flowerId = $_GET['id'];
+// Tạo kết nối
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-// Lấy thông tin loại hoa từ CSDL
-$sql = "SELECT * FROM flowers WHERE id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $flowerId);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    die("Loài hoa không tồn tại.");
+// Kiểm tra kết nối
+if ($conn->connect_error) {
+    die("Kết nối thất bại: " . $conn->connect_error);
 }
 
-$flower = $result->fetch_assoc();
-
-// Xử lý form khi submit
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $id = $_POST['id'];
     $name = $_POST['name'];
     $description = $_POST['description'];
     $image = $_POST['image'];
 
-    $sql = "UPDATE flowers SET name = ?, description = ?, image = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssi", $name, $description, $image, $flowerId);
+    // Cập nhật thông tin hoa
+    $stmt = $conn->prepare("UPDATE flowers SET name = ?, description = ?, image = ? WHERE id = ?");
+    $stmt->bind_param("sssi", $name, $description, $image, $id);
     $stmt->execute();
 
-    header('Location: admin.php');
+    // Chuyển hướng về trang admin
+    header("location: admin.php");
     exit;
 }
+
+// Lấy thông tin hoa theo ID
+$id = $_GET['id'];
+$stmt = $conn->prepare("SELECT * FROM flowers WHERE id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$result = $stmt->get_result();
+$flower = $result->fetch_assoc();
+
 ?>
 
 <!DOCTYPE html>
@@ -44,46 +50,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sửa Thông Tin Loài Hoa</title>
-    <!-- Thêm Bootstrap -->
-    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <title>Chỉnh sửa hoa</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container mt-5">
-    <h1 class="mb-4">Sửa Thông Tin Loài Hoa</h1>
-    <form method="post">
-        <!-- Ẩn chỉ mục hoa để xử lý cập nhật -->
-        <input type="hidden" name="index" value="<?php echo $index; ?>">
-
-        <!-- Trường nhập Tên Hoa -->
-        <div class="mb-3">
-            <label for="name" class="form-label">Tên Hoa</label>
-            <input type="text" class="form-control" id="name" name="name" 
-                   value="<?php echo htmlspecialchars($flower['name']); ?>" required>
-        </div>
-
-        <!-- Trường nhập Mô Tả -->
-        <div class="mb-3">
-            <label for="description" class="form-label">Mô Tả</label>
-            <textarea class="form-control" id="description" name="description" required><?php echo htmlspecialchars($flower['description']); ?></textarea>
-        </div>
-
-        <!-- Trường nhập URL Ảnh -->
-        <div class="mb-3">
-            <label for="image" class="form-label">URL Ảnh</label>
-            <input type="text" class="form-control" id="image" name="image" 
-                   value="<?php echo htmlspecialchars($flower['image']); ?>" required>
-        </div>
-
-        <!-- Nút Lưu Thay Đổi -->
-        <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
-
-        <!-- Nút Hủy -->
-        <a href="admin.php" class="btn btn-secondary">Hủy</a>
-    </form>
-</div>
-
-<!-- Thêm Bootstrap JS -->
-<script src="bootstrap/js/bootstrap.bundle.min.js"></script>
+    <div class="container mt-4">
+        <h2 class="text-center">Chỉnh sửa hoa</h2>
+        <form method="post" action="">
+            <input type="hidden" name="id" value="<?php echo $flower['id']; ?>">
+            <div class="mb-3">
+                <label for="name" class="form-label">Tên hoa</label>
+                <input type="text" class="form-control" id="name" name="name" value="<?php echo htmlspecialchars($flower['name']); ?>" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Mô tả</label>
+                <textarea class="form-control" id="description" name="description" required><?php echo htmlspecialchars($flower['description']); ?></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Link hình ảnh</label>
+                <input type="text" class="form-control" id="image" name="image" value="<?php echo htmlspecialchars($flower['image']); ?>" required>
+            </div>
+            <button type="submit" class="btn btn-success">Cập nhật hoa</button>
+        </form>
+    </div>
+    <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php
+$conn->close(); // Đóng kết nối
+?>

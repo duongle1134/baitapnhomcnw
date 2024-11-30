@@ -1,8 +1,8 @@
 <?php
 $host = 'localhost';
 $dbname = 'flower_db';
-$username = 'root'; // Đổi username nếu cần
-$password = ''; // Đổi password nếu cần
+$username = 'root';
+$password = '';
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
