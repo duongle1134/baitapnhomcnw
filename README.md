@@ -1,2 +1,5 @@
-Lê Duy Nhật Minh - 2251172424 - KTPM5
-bài tập về nhà Công Nghệ Web
+Thành viên nhóm:
+Lê Văn Dương
+Vũ Xuân Thành
+Lương Đại Dương
+Lê Duy Nhật Minh
